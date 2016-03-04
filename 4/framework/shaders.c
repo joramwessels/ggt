@@ -62,7 +62,7 @@ shade_blinn_phong(intersection_point ip)
     // Ia: intensity of ambient light, Ii: intensity of light source
     // li: direction of light source, n: normal, h: halfway vector
     // kd: diffuse contribution, ks: specular contribution, a: phong exponent
-    vec3 ones = v3_create(1,1,1), h, diff, spec;
+    vec3 ones = v3_create(1,1,1), h, diff, spec, cf;
     vec3 cd = v3_create(1,0,0), cs = ones, offset = v3_multiply(ones, 0.0001);
     float phong, dot, sources = 0, reflections = 0, kd = 0.8, ks = 0.5, a = 50;
     
@@ -74,15 +74,18 @@ shade_blinn_phong(intersection_point ip)
         if (dot < 0) dot = 0;
         sources += scene_lights[i].intensity * dot;
         // reflections = sum(Ii * (n.h)^a)
-        h = v3_multiply(v3_add(ip.i, ones), 1/v3_length(v3_add(ip.i, ones)));
+        h = v3_normalize(v3_add(ip.i, light_source));
         phong = pow(v3_dotprod(ip.n, h), a);
-        if (phong < 0) phong = 0;
         reflections += scene_lights[i].intensity * phong;
     }
     // cf = cd * (Ia + (kd * sources)) + cs * ks * reflections
-    diff = v3_multiply(cd, (scene_ambient_light + kd * sources));
+    diff = v3_multiply(cd, (scene_ambient_light + (kd * sources)));
     spec = v3_multiply(cs, (ks * reflections));
-    return v3_add(diff, spec);
+    cf = v3_add(diff, spec);
+    if (spec.x + diff.x > 1) cf.x = 1;
+    if (spec.y + diff.y > 1) cf.y = 1;
+    if (spec.z + diff.z > 1) cf.z = 1;
+    return cf;
 }
 
 vec3
