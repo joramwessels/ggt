@@ -33,11 +33,32 @@ shade_constant(intersection_point ip)
     return v3_create(1, 0, 0);
 }
 
+
 vec3
 shade_matte(intersection_point ip)
 {
-    return v3_create(1, 0, 0);
+    float contr;
+    vec3 light_source;
+    vec3 pixel_light = v3_create(0, 0, 0);
+    vec3 ones  = v3_create(1, 1, 1);
+    vec3 offset = v3_multiply(ones, 0.0001);
+    if (scene_ambient_light > 0) {
+        pixel_light = v3_add(pixel_light, v3_multiply(ones, scene_ambient_light));
+    }
+    for (int i = 0; i < scene_num_lights; i++)
+    {
+        light_source = v3_normalize(v3_add(scene_lights[i].position, ip.p));
+        if (shadow_check(v3_add(ip.p, offset), light_source)) {
+            contr = 0;
+        } else {
+            contr = scene_lights[i].intensity * v3_dotprod(light_source, ip.n);
+            if (contr < 0) contr = 0;
+        }
+        pixel_light = v3_add(pixel_light, v3_multiply(ones, contr));
+    }
+    return pixel_light;
 }
+
 
 vec3
 shade_blinn_phong(intersection_point ip)
