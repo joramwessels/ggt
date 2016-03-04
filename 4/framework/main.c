@@ -184,26 +184,26 @@ ray_trace(void)
     image_plane_height = 2.0 * tan(0.5*VFOV/180*M_PI);
     image_plane_width = image_plane_height * (1.0 * framebuffer_width / framebuffer_height);
 
-    vec3 s, e, u, v, w, us, vs;
+    vec3 d, e, u, v, w, ud, vd;
     float l, r, b, t, nx, ny;
-    // pixel vector s, origin e
+    // direction d, origin e
     // ONB u, v, w
     // image plane edges l, r, b, t
     // window size nx, ny
     e = scene_camera_position;
     u = right_vector, v = up_vector, w = v3_negate(forward_vector);
     l = -0.5 * image_plane_width, r = 0.5 * image_plane_width;
-    b = -0.5 * image_plane_height, t = 0.5 * image_plane_height;
+    b = 0.5 * image_plane_height, t = -0.5 * image_plane_height;
     nx = framebuffer_width, ny = framebuffer_height;
 
     // Loop over all pixels in the framebuffer
     for (j = 0; j < ny; j++) {
         for (i = 0; i < nx; i++) {
 
-            us = v3_multiply(u, (l + (r - l) * ((i + 0.5) / nx)));
-            vs = v3_multiply(v, (b + (t - b) * ((j + 0.5) / ny)));
-            s = v3_add(v3_add(us, vs), v3_negate(w));
-            color = ray_color(0, e, v3_subtract(s, e));
+            ud = v3_multiply(u, (l + (r - l) * ((i + 0.5) / nx)));
+            vd = v3_multiply(v, (b + (t - b) * ((j + 0.5) / ny)));
+            d = v3_add(v3_add(ud, vd), v3_negate(w));
+            color = ray_color(0, e, d);
             put_pixel(i, j, color.x, color.y, color.z);
 
         }
