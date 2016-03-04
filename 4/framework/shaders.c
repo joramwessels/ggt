@@ -37,20 +37,20 @@ shade_constant(intersection_point ip)
 vec3
 shade_matte(intersection_point ip)
 {
-    float contr, offset = 0.0001;
-    vec3 li, pixel_light = v3_create(0, 0, 0), ones = v3_create(1, 1, 1);
+    float contribution, offset = 0.0001;
+    vec3 li, cf = v3_create(0, 0, 0), ones = v3_create(1, 1, 1);
     if (scene_ambient_light > 0) {
-        pixel_light = v3_add(pixel_light, v3_multiply(ones, scene_ambient_light));
+        cf = v3_add(cf, v3_multiply(ones, scene_ambient_light));
     }
     for (int i = 0; i < scene_num_lights; i++)
     {
         li = v3_normalize(v3_add(scene_lights[i].position, ip.p));
         if (shadow_check(v3_add(ip.p, v3_multiply(li, offset)), li)) continue;
-        contr = scene_lights[i].intensity * v3_dotprod(li, ip.n);
-        if (contr < 0) contr = 0;
-        pixel_light = v3_add(pixel_light, v3_multiply(ones, contr));
+        contribution = scene_lights[i].intensity * v3_dotprod(li, ip.n);
+        if (contribution < 0) contribution = 0;
+        cf = v3_add(cf, v3_multiply(ones, contribution));
     }
-    return pixel_light;
+    return cf;
 }
 
 
@@ -91,7 +91,12 @@ shade_blinn_phong(intersection_point ip)
 vec3
 shade_reflection(intersection_point ip)
 {
-    return v3_create(1, 0, 0);
+    float kd = 0.75, ks = 0.25, offset = 0.0001;
+    vec3 matte = shade_matte(ip);
+    vec3 r = v3_subtract(v3_multiply(ip.n, (2 * v3_dotprod(ip.i, ip.n))), ip.i);
+    vec3 origin = v3_add(ip.p, v3_multiply(r, offset));
+    vec3 reflc = ray_color((ip.ray_level + 1), origin, r);
+    return v3_add(v3_multiply(matte, kd), v3_multiply(reflc, ks));
 }
 
 // Returns the shaded color for the given point to shade.
