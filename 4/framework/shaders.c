@@ -37,17 +37,16 @@ shade_constant(intersection_point ip)
 vec3
 shade_matte(intersection_point ip)
 {
-    float contr;
-    vec3 light_source, pixel_light = v3_create(0, 0, 0);
-    vec3 ones = v3_create(1, 1, 1), offset = v3_multiply(ones, 0.0001);
+    float contr, offset = 0.0001;
+    vec3 li, pixel_light = v3_create(0, 0, 0), ones = v3_create(1, 1, 1);
     if (scene_ambient_light > 0) {
         pixel_light = v3_add(pixel_light, v3_multiply(ones, scene_ambient_light));
     }
     for (int i = 0; i < scene_num_lights; i++)
     {
-        light_source = v3_normalize(v3_add(scene_lights[i].position, ip.p));
-        if (shadow_check(v3_add(ip.p, offset), light_source)) continue;
-        contr = scene_lights[i].intensity * v3_dotprod(light_source, ip.n);
+        li = v3_normalize(v3_add(scene_lights[i].position, ip.p));
+        if (shadow_check(v3_add(ip.p, v3_multiply(li, offset)), li)) continue;
+        contr = scene_lights[i].intensity * v3_dotprod(li, ip.n);
         if (contr < 0) contr = 0;
         pixel_light = v3_add(pixel_light, v3_multiply(ones, contr));
     }
@@ -63,18 +62,19 @@ shade_blinn_phong(intersection_point ip)
     // li: direction of light source, n: normal, h: halfway vector
     // kd: diffuse contribution, ks: specular contribution, a: phong exponent
     vec3 ones = v3_create(1,1,1), h, diff, spec, cf;
-    vec3 cd = v3_create(1,0,0), cs = ones, offset = v3_multiply(ones, 0.0001);
-    float phong, dot, sources = 0, reflections = 0, kd = 0.8, ks = 0.5, a = 50;
+    vec3 cd = v3_create(1,0,0), cs = ones;
+    float phong, dot, offset = 0.0001, sources = 0, reflections = 0;
+    float kd = 0.8, ks = 0.5, a = 50;
     
     for (int i = 0; i < scene_num_lights; i++) {
-        vec3 light_source = v3_normalize(v3_add(scene_lights[i].position, ip.p));
-        if (shadow_check(v3_add(ip.p, offset), light_source)) continue;
+        vec3 li = v3_normalize(v3_subtract(scene_lights[i].position, ip.p));
+        if (shadow_check(v3_add(ip.p, v3_multiply(li, offset)), li)) continue;
         // sources = sum(Ii * max(0, n.li))
-        dot = v3_dotprod(ip.n, light_source);
+        dot = v3_dotprod(ip.n, li);
         if (dot < 0) dot = 0;
         sources += scene_lights[i].intensity * dot;
         // reflections = sum(Ii * (n.h)^a)
-        h = v3_normalize(v3_add(ip.i, light_source));
+        h = v3_normalize(v3_add(ip.i, li));
         phong = pow(v3_dotprod(ip.n, h), a);
         reflections += scene_lights[i].intensity * phong;
     }
