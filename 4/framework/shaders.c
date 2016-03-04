@@ -63,7 +63,27 @@ shade_matte(intersection_point ip)
 vec3
 shade_blinn_phong(intersection_point ip)
 {
-    return v3_create(1, 0, 0);
+    // cf: final color, cd: diffuse-reflexion-coefficient, cs: shinyness
+    // Ia: intensity of ambient light, Ii: intensity of light source
+    // li: direction of light source, n: normal, h: halfway vector
+    // kd: diffuse contribution, ks: specular contribution, a: phong exponent
+    vec3 ones = v3_create(1,1,1), h, diff, spec, cd = v3_create(1,0,0), cs = ones;
+    float phong, dot, sources = 0, reflections = 0, kd = 0.8, ks = 0.5, a = 50;
+    
+    for (int i = 0; i < scene_num_lights; i++) {
+        // sources = sum(Ii * max(0, n.li))
+        dot = v3_dotprod(ip.n, scene_lights[i].position);
+        if (dot < 0) dot = 0;
+        sources += scene_lights[i].intensity * dot;
+        // reflections = sum(Ii * (n.h)^a)
+        h = v3_multiply(v3_add(ip.i, ones), 1/v3_length(v3_add(ip.i, ones)));
+        phong = pow(v3_dotprod(ip.n, h), a);
+        reflections += scene_lights[i].intensity * phong;
+    }
+    // cf = cd * (Ia + (kd * sources)) + cs * ks * reflections
+    diff = v3_multiply(cd, (scene_ambient_light + kd * sources));
+    spec = v3_multiply(cs, (ks * reflections));
+    return v3_add(diff, spec);
 }
 
 vec3
